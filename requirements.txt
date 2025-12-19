@@ -1,0 +1,17 @@
+streamlit
+pandas
+plotly
+requests
+python-dotenv
+openai
+replicate
+flask
+flask-cors
+google-generativeai
+PyPDF2
+Pillow
+pytesseract
+python-docx
+SpeechRecognition
+pyttsx3
+pyaudio
