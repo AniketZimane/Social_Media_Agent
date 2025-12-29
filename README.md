@@ -54,7 +54,7 @@ setup_mongodb.bat
 4. **Set up environment variables** (Optional)
 ```bash
 # Edit .env file
-MONGO_URI=mongodb+srv://addeveloper1604_db_user:n6X706WnlprhNCmX@cluster0.q3xu0ul.mongodb.net/?appName=Cluster0
+MONGO_URI=mongodb+srv://username_db_user:password@cluster0.q3xu0ul.mongodb.net/?appName=Cluster0
 REPLICATE_API_TOKEN=your_token_here
 OPENAI_API_KEY=your_key_here
 ```
