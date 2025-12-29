@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Wand2, Image, Hash, Target } from 'lucide-react';
+import { Sparkles, Wand2, Image, Hash, Target, Edit3, Send } from 'lucide-react';
 import BlogPreview from './BlogPreview';
 
 const ContentGenerator = ({ setBlogContent, blogContent }) => {
@@ -12,6 +12,9 @@ const ContentGenerator = ({ setBlogContent, blogContent }) => {
   const [uploadedFile, setUploadedFile] = useState(null);
   const [useFileContent, setUseFileContent] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editPrompt, setEditPrompt] = useState('');
+  const [isEditing, setIsEditing] = useState(false);
 
   const platforms = [
     '📸 Instagram',
@@ -185,6 +188,62 @@ const ContentGenerator = ({ setBlogContent, blogContent }) => {
       
       setBlogContent(mockContent);
       setIsGenerating(false);
+    }, 2000);
+  };
+
+  const handleEditContent = async () => {
+    if (!editPrompt.trim()) {
+      alert('Please enter your modification requirements');
+      return;
+    }
+
+    setIsEditing(true);
+    
+    try {
+      const response = await fetch('http://localhost:5001/api/edit-content', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          originalContent: blogContent,
+          editPrompt: editPrompt,
+          platform: platform
+        })
+      });
+      
+      if (response.ok) {
+        const editedData = await response.json();
+        setBlogContent(editedData);
+        setShowEditModal(false);
+        setEditPrompt('');
+        setIsEditing(false);
+        return;
+      }
+    } catch (error) {
+      console.log('Using fallback edit generation');
+    }
+    
+    // Fallback: Generate edited content locally
+    setTimeout(() => {
+      const editedContent = {
+        ...blogContent,
+        title: editPrompt.toLowerCase().includes('title') ? 
+          `${blogContent.title} - Updated` : blogContent.title,
+        content: editPrompt.toLowerCase().includes('shorter') ? 
+          blogContent.content.substring(0, blogContent.content.length / 2) + '...' :
+          editPrompt.toLowerCase().includes('longer') ?
+          blogContent.content + ` Additionally, ${editPrompt} provides more comprehensive insights and detailed analysis for better understanding.` :
+          blogContent.content + ` [Modified based on: ${editPrompt}]`,
+        hashtags: editPrompt.toLowerCase().includes('hashtag') ?
+          [...(blogContent.hashtags || []), '#updated', '#modified'] :
+          blogContent.hashtags
+      };
+      
+      setBlogContent(editedContent);
+      setShowEditModal(false);
+      setEditPrompt('');
+      setIsEditing(false);
     }, 2000);
   };
 
@@ -424,7 +483,41 @@ const ContentGenerator = ({ setBlogContent, blogContent }) => {
             </div>
 
             <div className="content-actions">
-              <button className="button-secondary">
+              <button 
+                className="button-secondary"
+                onClick={() => setShowEditModal(true)}
+              >
+                <Edit3 size={16} />
+                Edit Content
+              </button>
+              <button 
+                className="button-secondary"
+                onClick={async () => {
+                  try {
+                    const response = await fetch('http://localhost:5002/api/generate-image', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({
+                        title: blogContent.title
+                      })
+                    });
+                    
+                    if (response.ok) {
+                      const imageResult = await response.json();
+                      if (imageResult.success) {
+                        setBlogContent({
+                          ...blogContent,
+                          image_url: imageResult.image_url
+                        });
+                      }
+                    }
+                  } catch (error) {
+                    console.log('Image generation failed:', error);
+                  }
+                }}
+              >
                 <Image size={16} />
                 Generate Image
               </button>
@@ -436,6 +529,206 @@ const ContentGenerator = ({ setBlogContent, blogContent }) => {
           </motion.div>
         )}
       </motion.div>
+
+      {/* Edit Content Modal */}
+      <AnimatePresence>
+        {showEditModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowEditModal(false)}
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              backgroundColor: 'rgba(0,0,0,0.8)',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              zIndex: 1000,
+              backdropFilter: 'blur(4px)'
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="card"
+              style={{
+                maxWidth: '600px',
+                width: '90%',
+                position: 'relative'
+              }}
+            >
+              <button 
+                onClick={() => setShowEditModal(false)}
+                style={{
+                  position: 'absolute',
+                  top: '20px',
+                  right: '24px',
+                  background: 'rgba(99, 102, 241, 0.1)',
+                  border: '2px solid rgba(99, 102, 241, 0.3)',
+                  fontSize: '20px',
+                  cursor: 'pointer',
+                  color: '#6366f1',
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >×</button>
+              
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                marginBottom: '24px'
+              }}>
+                <div style={{
+                  width: '48px',
+                  height: '48px',
+                  borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <Edit3 size={24} color="white" />
+                </div>
+                <div>
+                  <h3 style={{
+                    color: '#f1f5f9',
+                    margin: 0,
+                    fontSize: '1.5rem',
+                    fontWeight: '600'
+                  }}>Edit Content</h3>
+                  <p style={{
+                    color: '#cbd5e1',
+                    margin: 0,
+                    fontSize: '14px'
+                  }}>Describe how you want to modify the content</p>
+                </div>
+              </div>
+
+              <div style={{
+                background: 'rgba(99, 102, 241, 0.1)',
+                border: '1px solid rgba(99, 102, 241, 0.2)',
+                borderRadius: '12px',
+                padding: '16px',
+                marginBottom: '24px'
+              }}>
+                <h4 style={{
+                  color: '#f1f5f9',
+                  margin: '0 0 8px 0',
+                  fontSize: '1.1rem'
+                }}>Current Content: {blogContent?.title}</h4>
+                <p style={{
+                  color: '#cbd5e1',
+                  margin: 0,
+                  fontSize: '14px',
+                  lineHeight: '1.5'
+                }}>{blogContent?.content?.substring(0, 150)}...</p>
+              </div>
+
+              <div style={{ marginBottom: '24px' }}>
+                <label style={{
+                  display: 'block',
+                  color: '#f1f5f9',
+                  marginBottom: '8px',
+                  fontWeight: '500'
+                }}>Modification Instructions</label>
+                <textarea
+                  value={editPrompt}
+                  onChange={(e) => setEditPrompt(e.target.value)}
+                  placeholder="e.g., Make it shorter, add more examples, change the tone to professional, focus more on benefits..."
+                  rows={4}
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    borderRadius: '8px',
+                    border: '2px solid rgba(99, 102, 241, 0.2)',
+                    background: 'rgba(15, 23, 42, 0.6)',
+                    color: '#e2e8f0',
+                    fontSize: '16px',
+                    outline: 'none',
+                    resize: 'vertical',
+                    fontFamily: 'inherit',
+                    lineHeight: '1.5'
+                  }}
+                  onFocus={(e) => e.target.style.borderColor = '#6366f1'}
+                  onBlur={(e) => e.target.style.borderColor = 'rgba(99, 102, 241, 0.2)'}
+                />
+              </div>
+
+              <div style={{
+                background: 'rgba(15, 23, 42, 0.4)',
+                border: '1px solid rgba(99, 102, 241, 0.2)',
+                borderRadius: '8px',
+                padding: '12px',
+                marginBottom: '24px'
+              }}>
+                <p style={{
+                  color: '#cbd5e1',
+                  margin: 0,
+                  fontSize: '14px',
+                  lineHeight: '1.5'
+                }}>
+                  💡 Examples: "Make it more engaging", "Add statistics", "Shorten to 200 words", "Change tone to casual", "Add more hashtags"
+                </p>
+              </div>
+
+              <div style={{
+                display: 'flex',
+                gap: '12px'
+              }}>
+                <button
+                  onClick={() => setShowEditModal(false)}
+                  className="button-secondary"
+                  style={{ flex: 1 }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleEditContent}
+                  disabled={isEditing || !editPrompt.trim()}
+                  className="button-primary"
+                  style={{
+                    flex: 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    opacity: (isEditing || !editPrompt.trim()) ? 0.7 : 1
+                  }}
+                >
+                  {isEditing ? (
+                    <>
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                      >
+                        <Wand2 size={16} />
+                      </motion.div>
+                      Editing...
+                    </>
+                  ) : (
+                    <>
+                      <Send size={16} />
+                      Apply Changes
+                    </>
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <style>{`
         .content-generator {

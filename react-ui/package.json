@@ -9,7 +9,8 @@
     "axios": "^1.4.0",
     "lucide-react": "^0.263.1",
     "recharts": "^2.7.2",
-    "framer-motion": "^10.12.16"
+    "framer-motion": "^10.12.16",
+    "styled-jsx": "^5.1.1"
   },
   "scripts": {
     "start": "react-scripts start",

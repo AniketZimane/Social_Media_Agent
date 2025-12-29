@@ -12,6 +12,7 @@ from free_ai_integration import FreeAIIntegration
 from google_ai_integration import GoogleAIIntegration
 from working_ai_integration import WorkingAIIntegration
 from dynamic_content_generator import DynamicContentGenerator
+from database import db_manager
 
 # Page config
 st.set_page_config(
@@ -20,6 +21,11 @@ st.set_page_config(
     initial_sidebar_state="expanded",
     page_icon="🤖"
 )
+
+# Authentication check - MUST BE FIRST
+from auth import auth_manager
+if not auth_manager.require_auth():
+    st.stop()
 
 # Platform data with RAG knowledge
 PLATFORMS = {
@@ -214,66 +220,220 @@ class AgenticBlogAI:
 # Custom CSS
 st.markdown("""
 <style>
+    /* Hide default Streamlit elements */
+    .stApp > header {visibility: hidden;}
+    .stDeployButton {display: none;}
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    
+    /* Main app styling */
+    .stApp {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+    }
+    
+    /* Remove white containers */
+    .main .block-container {
+        padding: 2rem 1rem;
+        background: transparent;
+        max-width: 1200px;
+    }
+    
+    /* Headers */
     .main-header {
         font-size: 3.5rem;
         text-align: center;
-        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
+        color: white;
         margin-bottom: 1rem;
+        text-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        font-weight: 700;
     }
     .subtitle {
         text-align: center;
-        color: #666;
+        color: rgba(255,255,255,0.9);
         font-size: 1.3rem;
         margin-bottom: 2rem;
     }
-    .metric-card {
-        background: white;
-        color: black;
-        padding: 1.5rem;
-        border-radius: 15px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    
+    /* Professional cards */
+    .pro-card {
+        background: rgba(255,255,255,0.95);
+        backdrop-filter: blur(20px);
+        border-radius: 20px;
+        padding: 2rem;
         margin: 1rem 0;
-        border-left: 5px solid #667eea;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        border: 1px solid rgba(255,255,255,0.2);
+        transition: all 0.3s ease;
     }
+    .pro-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 30px 60px rgba(0,0,0,0.15);
+    }
+    
+    /* Content sections */
+    .content-header {
+        background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+        backdrop-filter: blur(10px);
+        color: white;
+        padding: 2rem;
+        border-radius: 15px;
+        text-align: center;
+        margin-bottom: 2rem;
+        border: 1px solid rgba(255,255,255,0.1);
+    }
+    
+    /* Topic cards */
     .topic-card {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
+        padding: 2rem;
+        border-radius: 20px;
+        margin: 1.5rem 0;
+        box-shadow: 0 15px 35px rgba(102, 126, 234, 0.3);
+        transition: all 0.3s ease;
+        border: 1px solid rgba(255,255,255,0.1);
+    }
+    .topic-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 25px 50px rgba(102, 126, 234, 0.4);
+    }
+    
+    /* Metric cards */
+    .metric-card {
+        background: rgba(255,255,255,0.95);
+        backdrop-filter: blur(20px);
+        color: #333;
+        padding: 2rem;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        margin: 1rem 0;
+        border-left: 5px solid #667eea;
+        transition: all 0.3s ease;
+    }
+    .metric-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+    }
+    
+    /* Platform cards */
+    .platform-card {
+        background: rgba(255,255,255,0.9);
+        backdrop-filter: blur(15px);
+        color: #333;
         padding: 1.5rem;
         border-radius: 15px;
         margin: 1rem 0;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+        transition: all 0.3s ease;
+        border: 2px solid transparent;
     }
-    .platform-card {
-        background: white;
-        color: black;
-        padding: 1rem;
-        border-radius: 10px;
-        margin: 0.5rem 0;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    .platform-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+        border-color: rgba(102, 126, 234, 0.3);
     }
+    
+    /* Trend cards */
     .trend-card {
-        background: #f8f9fa;
-        color: black;
+        background: rgba(255,255,255,0.9);
+        backdrop-filter: blur(15px);
+        color: #334155;
         border-left: 4px solid #667eea;
-        padding: 1rem;
-        margin: 0.5rem 0;
-        border-radius: 5px;
+        padding: 1.5rem;
+        margin: 1rem 0;
+        border-radius: 12px;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+        transition: all 0.3s ease;
     }
+    .trend-card:hover {
+        transform: translateX(5px);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+        border-left-width: 6px;
+    }
+    
+    /* Buttons */
     .stButton > button {
-        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border: none;
-        border-radius: 10px;
-        padding: 0.5rem 2rem;
-        font-weight: bold;
+        background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.1) 100%) !important;
+        color: white !important;
+        border: 2px solid rgba(255,255,255,0.3) !important;
+        border-radius: 15px !important;
+        padding: 1rem 2rem !important;
+        font-weight: 600 !important;
+        font-size: 1rem !important;
+        transition: all 0.3s ease !important;
+        backdrop-filter: blur(10px) !important;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.1) !important;
+    }
+    .stButton > button:hover {
+        background: rgba(255,255,255,0.3) !important;
+        border-color: rgba(255,255,255,0.5) !important;
+        transform: translateY(-3px) !important;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.2) !important;
+    }
+    
+    /* Sidebar styling */
+    .css-1d391kg {
+        background: rgba(255,255,255,0.1) !important;
+        backdrop-filter: blur(20px) !important;
+    }
+    
+    /* Input fields */
+    .stTextInput > div > div > input {
+        background: rgba(255,255,255,0.9) !important;
+        color: #333 !important;
+        border: 2px solid rgba(102, 126, 234, 0.2) !important;
+        border-radius: 12px !important;
+        padding: 0.75rem !important;
+        backdrop-filter: blur(10px) !important;
+    }
+    .stTextInput > div > div > input:focus {
+        border-color: #667eea !important;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1) !important;
+    }
+    
+    /* Select boxes */
+    .stSelectbox > div > div > div {
+        background: rgba(255,255,255,0.9) !important;
+        border: 2px solid rgba(102, 126, 234, 0.2) !important;
+        border-radius: 12px !important;
+        backdrop-filter: blur(10px) !important;
+    }
+    
+    /* Remove white backgrounds from containers */
+    .element-container {
+        background: transparent !important;
+    }
+    
+    /* Metrics */
+    .metric-value {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #667eea;
+        margin-bottom: 0.5rem;
+    }
+    .metric-label {
+        color: #64748b;
+        font-size: 1rem;
+        font-weight: 500;
+    }
+    
+    /* Professional glass effect */
+    .glass-card {
+        background: rgba(255,255,255,0.1);
+        backdrop-filter: blur(20px);
+        border-radius: 20px;
+        border: 1px solid rgba(255,255,255,0.2);
+        box-shadow: 0 20px 40px rgba(0,0,0,0.1);
     }
 </style>
 """, unsafe_allow_html=True)
 
 # Initialize AI
 ai = AgenticBlogAI()
+
+# Show user profile in sidebar
+auth_manager.show_user_profile()
 
 # Header
 st.markdown('<h1 class="main-header">🤖 Agentic AI Blog Writing Assistant</h1>', unsafe_allow_html=True)
@@ -283,8 +443,16 @@ st.markdown('<p class="subtitle">Intelligent Content Curation & Multi-Platform O
 with st.sidebar:
     st.header("🎯 Content Configuration")
     
-    topic = st.text_input("📝 Enter Topic:", "Artificial Intelligence", help="Enter any topic for AI-powered blog ideas")
-    platform = st.selectbox("🚀 Target Platform:", list(PLATFORMS.keys()))
+    # Check for restored session data
+    default_topic = st.session_state.get('restored_topic', "Artificial Intelligence")
+    default_platform_index = 0
+    if 'restored_platform' in st.session_state:
+        platform_list = list(PLATFORMS.keys())
+        if st.session_state.restored_platform in platform_list:
+            default_platform_index = platform_list.index(st.session_state.restored_platform)
+    
+    topic = st.text_input("📝 Enter Topic:", default_topic, help="Enter any topic for AI-powered blog ideas")
+    platform = st.selectbox("🚀 Target Platform:", list(PLATFORMS.keys()), index=default_platform_index)
     
     st.header("🔧 Advanced Options")
     content_focus = st.radio("Content Focus:", ["Trending", "Educational", "Opinion", "News Analysis"])
@@ -308,15 +476,20 @@ with st.sidebar:
 col1, col2, col3 = st.columns([3, 2, 2])
 
 with col1:
-    st.header("📊 AI-Generated Content Ideas")
+    # Enhanced content generation section
+    st.markdown('<div class="content-header"><h2>📊 AI-Generated Content Ideas</h2><p>Create engaging blog content with AI-powered insights</p></div>', unsafe_allow_html=True)
+    
+    st.markdown('<div class="pro-card">', unsafe_allow_html=True)
     
     col_btn1, col_btn2 = st.columns(2)
     
     with col_btn1:
-        generate_standard = st.button("🚀 Generate Topics", type="primary")
+        generate_standard = st.button("🚀 Generate Topics", key="gen_topics", help="Generate AI-powered blog topics")
     
     with col_btn2:
-        generate_ai = st.button("🤖 Full Blog AI", type="secondary")
+        generate_ai = st.button("🤖 Full Blog AI", key="gen_full", help="Generate complete blog content")
+    
+    st.markdown('</div>', unsafe_allow_html=True)
     
     # Initialize session state for blog content
     if 'blog_content_generated' not in st.session_state:
@@ -334,6 +507,19 @@ with col1:
                     # Store in session state
                     st.session_state.blog_content_generated = True
                     st.session_state.current_blog_content = blog_content
+                    
+                    # Save to database
+                    session_data = {
+                        "topic": topic,
+                        "platform": platform,
+                        "content_focus": content_focus,
+                        "blog_content": blog_content,
+                        "generated_topics": [{
+                            "title": blog_content['title'],
+                            "engagement_score": 0.85
+                        }]
+                    }
+                    auth_manager.save_user_session(session_data)
                     
                     st.success("✅ Complete blog content generated!")
                     
@@ -439,6 +625,16 @@ with col1:
                 
                 blog_topics = ai.generate_blog_topics(content_data, platform, content_focus)
                 
+                # Save session to database
+                session_data = {
+                    "topic": topic,
+                    "platform": platform,
+                    "content_focus": content_focus,
+                    "generated_topics": blog_topics,
+                    "engagement_scores": {t['title']: t['engagement_score'] for t in blog_topics}
+                }
+                auth_manager.save_user_session(session_data)
+                
                 # Mark as generated for standard topics too
                 st.session_state.blog_content_generated = True
                 st.session_state.current_blog_content = {
@@ -484,8 +680,10 @@ with col1:
                 """, unsafe_allow_html=True)
     
     # Content Calendar
-    st.header("📅 AI-Generated Content Calendar")
-    if st.button("Generate 7-Day Calendar"):
+    st.markdown('<div class="pro-card">', unsafe_allow_html=True)
+    st.markdown('<div class="content-header"><h3>📅 AI-Generated Content Calendar</h3><p>Plan your content strategy for the week</p></div>', unsafe_allow_html=True)
+    
+    if st.button("📅 Generate 7-Day Calendar", key="gen_calendar"):
         content_data = ai.collect_multi_source_content(topic)
         topics = ai.generate_blog_topics(content_data, platform, content_focus)
         calendar_df = ai.generate_content_calendar(topics)
@@ -493,30 +691,46 @@ with col1:
         if not calendar_df.empty:
             st.dataframe(calendar_df, use_container_width=True)
         else:
-            st.info("No suitable content found for the selected criteria")
+            st.info("📝 No suitable content found for the selected criteria")
+    
+    st.markdown('</div>', unsafe_allow_html=True)
 
 with col2:
-    st.header("⏰ Optimal Timing & Strategy")
+    st.markdown('<div class="content-header"><h3>⏰ Optimal Timing & Strategy</h3><p>Platform-specific optimization insights</p></div>', unsafe_allow_html=True)
+    
+    st.markdown('<div class="pro-card">', unsafe_allow_html=True)
     
     # Platform-specific recommendations
     platform_data = PLATFORMS[platform]
     
     st.markdown(f"""
     <div class="metric-card" style="border-left-color: {platform_data['color']}">
-        <h3>🎯 {platform}</h3>
-        <p><strong>⏰ Best Times:</strong> {', '.join(platform_data['times'])}</p>
-        <p><strong>📅 Best Days:</strong> {', '.join(platform_data['days'])}</p>
-        <p><strong>📝 Content Types:</strong> {', '.join(platform_data['types'])}</p>
-        
+        <h3 style="color: {platform_data['color']}; margin-bottom: 1rem;">🎯 {platform}</h3>
+        <div style="display: grid; gap: 0.5rem;">
+            <p><strong>⏰ Best Times:</strong> {', '.join(platform_data['times'])}</p>
+            <p><strong>📅 Best Days:</strong> {', '.join(platform_data['days'])}</p>
+            <p><strong>📝 Content Types:</strong> {', '.join(platform_data['types'])}</p>
+        </div>
     </div>
     """, unsafe_allow_html=True)
     
     # Engagement prediction
     sample_engagement = ai.predict_engagement(topic, platform, 0.8)
-    st.metric("🔥 Predicted Engagement", f"{sample_engagement:.0%}", "↗️ +12%")
+    
+    st.markdown(f"""
+    <div class="metric-card">
+        <div class="metric-value">{sample_engagement:.0%}</div>
+        <div class="metric-label">🔥 Predicted Engagement</div>
+        <div style="color: #10b981; font-size: 0.9rem; margin-top: 0.5rem;">↗️ +12% from last week</div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown('</div>', unsafe_allow_html=True)
     
     # Platform insights
-    st.header("💡 Content Optimization Tips")
+    st.markdown('<div class="pro-card">', unsafe_allow_html=True)
+    st.markdown('<h4 style="color: #667eea; margin-bottom: 1rem;">💡 Content Optimization Tips</h4>', unsafe_allow_html=True)
+    
     tips = [
         "Use trending hashtags for maximum reach",
         "Include visual elements to boost engagement",
@@ -525,11 +739,27 @@ with col2:
         "Engage with comments within first hour"
     ]
     
-    for tip in tips:
-        st.info(f"💡 {tip}")
+    for i, tip in enumerate(tips, 1):
+        st.markdown(f"""
+        <div style="
+            background: rgba(255,255,255,0.8);
+            backdrop-filter: blur(10px);
+            padding: 1rem;
+            border-radius: 10px;
+            margin: 0.5rem 0;
+            border-left: 4px solid #0288d1;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        ">
+            <strong>{i}.</strong> {tip}
+        </div>
+        """, unsafe_allow_html=True)
+    
+    st.markdown('</div>', unsafe_allow_html=True)
 
 with col3:
-    st.header("📈 Platform Performance Insights")
+    st.markdown('<div class="content-header"><h3>📈 Platform Performance Insights</h3><p>Real-time analytics and trends</p></div>', unsafe_allow_html=True)
+    
+    st.markdown('<div class="content-section">', unsafe_allow_html=True)
     
     # Platform comparison chart
     platform_scores = {}
@@ -539,25 +769,43 @@ with col3:
         
         st.markdown(f"""
         <div class="platform-card" style="border-left: 4px solid {p_data['color']}">
-            <h4>{p_name}</h4>
-            <p>Performance Score: {score}%</p>
-            <div style="background: {p_data['color']}; height: 6px; width: {score}%; border-radius: 3px;"></div>
+            <h4 style="color: {p_data['color']}; margin-bottom: 0.5rem;">{p_name}</h4>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span>Performance Score</span>
+                <strong style="color: {p_data['color']}; font-size: 1.2rem;">{score}%</strong>
+            </div>
+            <div style="background: #e2e8f0; height: 8px; border-radius: 4px; margin-top: 0.5rem; overflow: hidden;">
+                <div style="background: {p_data['color']}; height: 100%; width: {score}%; border-radius: 4px; transition: width 0.3s ease;"></div>
+            </div>
         </div>
         """, unsafe_allow_html=True)
     
-    st.header("🔥 Real-Time Trending Analysis")
+    st.markdown('</div>', unsafe_allow_html=True)
+    
+    st.markdown('<div class="content-section">', unsafe_allow_html=True)
+    st.markdown('<h4 style="color: #667eea; margin-bottom: 1rem;">🔥 Real-Time Trending Analysis</h4>', unsafe_allow_html=True)
     
     # Trending topics analysis
     trending_data = ai.analyze_trending_topics()
     
     for topic, data in list(trending_data.items())[:5]:
         growth_icon = "↗️" if data["growth"] > 0 else "↘️"
+        growth_color = "#10b981" if data["growth"] > 0 else "#ef4444"
+        
         st.markdown(f"""
         <div class="trend-card">
-            <strong>{topic}</strong><br>
-            <small>Score: {data['score']:.0f}% | Growth: {growth_icon} {data['growth']:.1f}% | Volume: {data['volume']:,}</small>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <strong style="color: #1e293b;">{topic}</strong>
+                <span style="color: {growth_color}; font-weight: 600;">{growth_icon} {data['growth']:.1f}%</span>
+            </div>
+            <div style="display: flex; gap: 1rem; margin-top: 0.5rem; font-size: 0.9rem; color: #64748b;">
+                <span>📈 Score: {data['score']:.0f}%</span>
+                <span>📅 Volume: {data['volume']:,}</span>
+            </div>
         </div>
         """, unsafe_allow_html=True)
+    
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # Analytics Dashboard
 st.header("📊 Real-Time Writing Pulse Dashboard")
@@ -683,6 +931,14 @@ if st.session_state.get('blog_content_generated', False):
                 }
                 st.session_state.posting_history.append(post_record)
                 
+                # Save to database
+                auth_manager.save_user_post({
+                    "title": st.session_state.current_blog_content['title'],
+                    "platforms": selected_platforms,
+                    "scheduled_time": schedule_datetime,
+                    "status": "scheduled"
+                })
+                
                 st.success(f"✅ Post scheduled for {schedule_datetime.strftime('%Y-%m-%d %H:%M')} on {', '.join(selected_platforms)}")
                 print(f"\n[DASHBOARD] New post scheduled: ID {post_record['id']} for {schedule_datetime}")
                 
@@ -713,6 +969,16 @@ if st.session_state.get('blog_content_generated', False):
                     post_record["status"] = "posted" if any(r["success"] for r in demo_results) else "failed"
                     post_record["results"] = demo_results
                     post_record["posted_at"] = datetime.now()
+                    
+                    # Update database
+                    auth_manager.save_user_post({
+                        "title": st.session_state.current_blog_content['title'],
+                        "platforms": selected_platforms,
+                        "scheduled_time": schedule_datetime,
+                        "status": post_record["status"],
+                        "results": demo_results,
+                        "posted_at": datetime.now()
+                    })
                     
                     # Show results
                     st.write("**Posting Results:**")
@@ -829,6 +1095,10 @@ st.header("🔄 System Workflow")
 if st.button("📊 View Complete Workflow Diagram"):
     from workflow_diagram import show_workflow_page
     show_workflow_page()
+
+# User History Section
+st.header("📅 Your Content History")
+auth_manager.show_user_history()
 
 # Multimodal Content Processing
 st.header("🎨 Multimodal Content Analysis")

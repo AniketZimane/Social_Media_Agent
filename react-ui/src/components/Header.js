@@ -1,8 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Bot, Sparkles } from 'lucide-react';
+import { Bot, Sparkles, User, LogOut } from 'lucide-react';
 
-const Header = () => {
+const Header = ({ user, isGuest, onLogout }) => {
   return (
     <motion.header 
       className="header"
@@ -14,14 +14,33 @@ const Header = () => {
         <div className="logo">
           <Bot size={40} className="logo-icon" />
           <div>
-            <h1 className="gradient-text">Agentic AI Blog Assistant</h1>
+            <h1 className="gradient-text">AI Blog Assistant</h1>
             <p className="tagline">Intelligent Content Curation & Multi-Platform Optimization</p>
           </div>
         </div>
         
-        <div className="ai-status">
-          <Sparkles size={20} />
-          <span>AI Active</span>
+        <div className="header-right">
+          <div className="ai-status">
+            <Sparkles size={20} />
+            <span>AI Active</span>
+          </div>
+          
+          <div className="user-info">
+            {user ? (
+              <div className="user-profile">
+                <User size={20} />
+                <span>{user.username}</span>
+                <button className="logout-btn" onClick={onLogout}>
+                  <LogOut size={16} />
+                </button>
+              </div>
+            ) : isGuest ? (
+              <div className="guest-profile">
+                <User size={20} />
+                <span>Guest Mode</span>
+              </div>
+            ) : null}
+          </div>
         </div>
       </div>
       
@@ -78,6 +97,46 @@ const Header = () => {
           font-weight: 500;
           border: 1px solid rgba(34, 197, 94, 0.3);
           backdrop-filter: blur(10px);
+        }
+        
+        .header-right {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+        }
+        
+        .user-profile, .guest-profile {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          background: rgba(255, 255, 255, 0.1);
+          color: white;
+          padding: 0.5rem 1rem;
+          border-radius: 20px;
+          font-weight: 500;
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          backdrop-filter: blur(10px);
+        }
+        
+        .guest-profile {
+          background: rgba(108, 117, 125, 0.2);
+          color: #6c757d;
+          border-color: rgba(108, 117, 125, 0.3);
+        }
+        
+        .logout-btn {
+          background: none;
+          border: none;
+          color: rgba(255, 255, 255, 0.8);
+          cursor: pointer;
+          padding: 0.25rem;
+          border-radius: 4px;
+          transition: all 0.2s;
+        }
+        
+        .logout-btn:hover {
+          background: rgba(255, 255, 255, 0.1);
+          color: white;
         }
         
         @media (max-width: 768px) {

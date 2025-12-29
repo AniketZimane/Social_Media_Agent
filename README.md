@@ -38,24 +38,38 @@ agentic ai project/
 cd "d:\Code\Innovative_things\agentic ai project"
 ```
 
-2. **Install dependencies**
+2. **Install dependencies (including MongoDB)**
 ```bash
 pip install -r requirements.txt
+# OR run the setup script
+setup_mongodb.bat
 ```
 
-3. **Set up environment variables** (Optional)
+3. **MongoDB Database Setup**
+- Database URI is pre-configured in `.env` file
+- Database: `agentic_ai_blog`
+- Collections: `users`, `sessions`, `blog_sessions`, `posting_history`
+- Test connection: `python test_mongodb.py`
+
+4. **Set up environment variables** (Optional)
 ```bash
 # Edit .env file
+MONGO_URI=mongodb+srv://addeveloper1604_db_user:n6X706WnlprhNCmX@cluster0.q3xu0ul.mongodb.net/?appName=Cluster0
 REPLICATE_API_TOKEN=your_token_here
 OPENAI_API_KEY=your_key_here
 ```
 
-4. **Run the application**
+5. **Run the application**
 ```bash
 streamlit run main.py
 ```
 
 ## 🎮 Usage Guide
+
+### Authentication
+1. **Register/Login**: Create account or login with existing credentials
+2. **Session Management**: Automatic 7-day session with remember me option
+3. **User Profile**: View analytics and session history in sidebar
 
 ### Basic Usage
 1. **Enter Topic**: Input any topic (e.g., "Artificial Intelligence", "Climate Tech")
@@ -63,6 +77,7 @@ streamlit run main.py
 3. **Configure Options**: Set content focus, audience level, content length
 4. **Generate Content**: Click "Generate Blog Topics" for AI-powered suggestions
 5. **View Analytics**: Analyze engagement predictions and optimization tips
+6. **Session History**: Access previous sessions and restore configurations
 
 ### Advanced Features
 - **Multimodal Input**: Upload images, voice notes, or enter text for analysis
@@ -71,21 +86,33 @@ streamlit run main.py
 - **Trending Analysis**: Monitor real-time trending topics
 - **Engagement Prediction**: Get AI-powered engagement forecasts
 
-## 🎨 Key Components
+## 📊 Key Components
 
-### 1. AgenticBlogAI Class
+### 1. Authentication System
+- User registration and login
+- Secure password hashing
+- Session management with tokens
+- 7-day session persistence
+
+### 2. MongoDB Database Integration
+- User management and authentication
+- Blog session history storage
+- Social media posting history
+- User analytics and metrics
+
+### 3. AgenticBlogAI Class
 - Multi-source content collection
 - Blog topic generation
 - Engagement prediction
 - Trending analysis
 
-### 2. ContentSourceManager
+### 4. ContentSourceManager
 - News API integration
 - Social media trend simulation
 - Research paper collection
 - Content ranking and relevance scoring
 
-### 3. EngagementPredictor
+### 5. EngagementPredictor
 - AI-powered engagement scoring
 - Platform-specific optimization
 - Viral potential prediction

@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Target, Clock, Hash, Users, TrendingUp } from 'lucide-react';
+import { Target, Clock, Hash, Users, TrendingUp, Share2, Copy } from 'lucide-react';
 
 const PlatformOptimizer = ({ blogContent }) => {
   // Use the main blog content
@@ -104,6 +104,32 @@ const PlatformOptimizer = ({ blogContent }) => {
     };
   };
 
+  const handleCopyContent = (platform, content) => {
+    const optimizedContent = getOptimizedContent(platform, content);
+    const fullContent = `${content.title || 'Blog Post'}\n\n${optimizedContent.content}\n\n${optimizedContent.hashtags}`;
+    navigator.clipboard.writeText(fullContent);
+    alert('Content copied to clipboard!');
+  };
+
+  const handleShareContent = (platform, content) => {
+    const optimizedContent = getOptimizedContent(platform, content);
+    const shareText = `${content.title || 'Blog Post'}\n\n${optimizedContent.content}\n\n${optimizedContent.hashtags}`;
+    
+    const shareUrls = {
+      twitter: `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`,
+      linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.href)}&summary=${encodeURIComponent(shareText)}`,
+      instagram: '#', // Instagram doesn't support direct URL sharing
+      youtube: '#' // YouTube doesn't support direct text sharing
+    };
+
+    if (shareUrls[platform.id] && shareUrls[platform.id] !== '#') {
+      window.open(shareUrls[platform.id], '_blank');
+    } else {
+      // For platforms without direct sharing, copy to clipboard
+      handleCopyContent(platform, content);
+    }
+  };
+
   return (
     <div className="platform-optimizer">
       <motion.div 
@@ -203,8 +229,18 @@ const PlatformOptimizer = ({ blogContent }) => {
                     <button 
                       className="button-secondary"
                       style={{ borderColor: platform.color, color: platform.color }}
+                      onClick={() => handleCopyContent(platform, activeContent)}
                     >
+                      <Copy size={16} />
                       Copy Content
+                    </button>
+                    <button 
+                      className="button-secondary"
+                      style={{ borderColor: platform.color, color: platform.color }}
+                      onClick={() => handleShareContent(platform, activeContent)}
+                    >
+                      <Share2 size={16} />
+                      Share Post
                     </button>
                     <button 
                       className="button-primary"
@@ -393,7 +429,7 @@ const PlatformOptimizer = ({ blogContent }) => {
 
         .platform-actions {
           display: flex;
-          gap: 1rem;
+          gap: 0.75rem;
         }
 
         .platform-actions button {
@@ -403,6 +439,11 @@ const PlatformOptimizer = ({ blogContent }) => {
           font-weight: 500;
           cursor: pointer;
           transition: all 0.3s ease;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.5rem;
+          font-size: 0.9rem;
         }
 
         .platform-actions button:hover {

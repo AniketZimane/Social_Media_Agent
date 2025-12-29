@@ -7,9 +7,9 @@ const Footer = () => {
       <div className="footer-content">
         <p>
           Developed with <Heart size={16} className="heart-icon" /> by 
-          <strong> Aniket Zimane</strong> | Team Lead - Agentic Agent
+          <strong> Aniket Zimane,Kiran Janjal,Abhay Sangle</strong> | Team - Agentic Agent
         </p>
-        <p className="footer-year">© 2024 Agentic AI Blog Assistant</p>
+        <p className="footer-year">© 2025 Agentic AI Blog Assistant</p>
       </div>
       
       <style jsx>{`
