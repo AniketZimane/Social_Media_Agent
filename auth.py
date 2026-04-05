@@ -1,6 +1,7 @@
 import streamlit as st
 from database import db_manager
 from typing import Dict, Optional
+import traceback
 
 class AuthManager:
     def __init__(self):
@@ -74,44 +75,6 @@ class AuthManager:
                 transform: translateY(-2px) !important;
                 box-shadow: 0 8px 25px rgba(0,0,0,0.2) !important;
             }
-            .skip-button {
-                background: rgba(108,117,125,0.8) !important;
-                border-color: rgba(108,117,125,0.5) !important;
-            }
-            .tab-container {
-                background: rgba(255,255,255,0.1);
-                border-radius: 15px;
-                padding: 1rem;
-                backdrop-filter: blur(10px);
-            }
-            .stTabs [data-baseweb="tab-list"] {
-                gap: 0.5rem;
-            }
-            .stTabs [data-baseweb="tab"] {
-                background: rgba(255,255,255,0.1);
-                color: white;
-                border-radius: 10px;
-                border: none;
-                padding: 0.75rem 1.5rem;
-                font-weight: 500;
-            }
-            .stTabs [aria-selected="true"] {
-                background: rgba(255,255,255,0.3) !important;
-                color: white !important;
-            }
-            .stTextInput > div > div > input {
-                background: rgba(255,255,255,0.1) !important;
-                color: white !important;
-                border: 2px solid rgba(255,255,255,0.2) !important;
-                border-radius: 10px !important;
-                padding: 0.75rem !important;
-            }
-            .stTextInput > div > div > input::placeholder {
-                color: rgba(255,255,255,0.7) !important;
-            }
-            .stCheckbox > label {
-                color: white !important;
-            }
         </style>
         """, unsafe_allow_html=True)
         
@@ -142,7 +105,6 @@ class AuthManager:
         st.markdown("<hr style='border: 1px solid rgba(255,255,255,0.2); margin: 2rem 0;'>", unsafe_allow_html=True)
         
         # Login/Register tabs
-        st.markdown('<div class="tab-container">', unsafe_allow_html=True)
         st.markdown("**🔐 Save Your Progress**")
         
         tab1, tab2 = st.tabs(["🔑 Login", "📝 Register"])
@@ -154,51 +116,59 @@ class AuthManager:
             self.show_enhanced_register_form()
         
         st.markdown('</div>', unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
     
-    def show_login_form(self):
-        """Display login form"""
-        st.subheader("🔑 Login to Your Account")
+    def show_enhanced_login_form(self):
+        """Enhanced login form with better styling"""
+        st.markdown("**Enter your credentials to access saved sessions**")
         
         with st.form("login_form"):
-            username = st.text_input("👤 Username")
-            password = st.text_input("🔒 Password", type="password")
-            remember_me = st.checkbox("🔄 Remember me for 7 days")
+            username = st.text_input("👤 Username", placeholder="Enter your username")
+            password = st.text_input("🔒 Password", type="password", placeholder="Enter your password")
+            remember_me = st.checkbox("🔄 Keep me logged in for 7 days")
             
-            submitted = st.form_submit_button("🚀 Login", type="primary")
+            submitted = st.form_submit_button("🚀 Sign In", type="primary")
             
             if submitted:
                 if username and password:
-                    with st.spinner("🔐 Logging in..."):
-                        result = self.db.login_user(username, password)
-                    
-                    if result["success"]:
-                        # Set session state
-                        st.session_state.authenticated = True
-                        st.session_state.user_id = result["user_id"]
-                        st.session_state.username = result["username"]
-                        st.session_state.session_token = result["session_token"]
-                        
-                        st.success(f"✅ Welcome back, {username}!")
-                        st.rerun()
-                    else:
-                        st.error(f"❌ {result['message']}")
+                    with st.spinner("🔐 Signing you in..."):
+                        try:
+                            # Direct database connection - no API calls
+                            result = self.db.login_user(username, password)
+                            
+                            if result["success"]:
+                                st.session_state.authenticated = True
+                                st.session_state.user_id = result["user_id"]
+                                st.session_state.username = result["username"]
+                                st.session_state.session_token = result["session_token"]
+                                st.session_state.skip_login = False
+                                
+                                st.success(f"✅ Welcome back, {username}! 🎉")
+                                st.balloons()
+                                st.rerun()
+                            else:
+                                st.error(f"❌ {result['message']}")
+                                
+                        except Exception as e:
+                            st.error(f"❌ Login failed: {str(e)}")
+                            st.info("🛠️ Database connection issue - check MongoDB status")
+                            print(f"Login error details: {e}")
+                            traceback.print_exc()
                 else:
                     st.error("❌ Please fill in all fields")
     
-    def show_register_form(self):
-        """Display registration form"""
-        st.subheader("📝 Create New Account")
+    def show_enhanced_register_form(self):
+        """Enhanced registration form with better styling"""
+        st.markdown("**Create your account to save and sync your blog sessions**")
         
         with st.form("register_form"):
-            username = st.text_input("👤 Choose Username")
-            email = st.text_input("📧 Email Address")
-            password = st.text_input("🔒 Password", type="password")
-            confirm_password = st.text_input("🔒 Confirm Password", type="password")
+            username = st.text_input("👤 Choose Username", placeholder="Pick a unique username")
+            email = st.text_input("📧 Email Address", placeholder="your.email@example.com")
+            password = st.text_input("🔒 Password", type="password", placeholder="Create a strong password")
+            confirm_password = st.text_input("🔒 Confirm Password", type="password", placeholder="Repeat your password")
             
-            agree_terms = st.checkbox("✅ I agree to the Terms of Service")
+            agree_terms = st.checkbox("✅ I agree to the Terms of Service and Privacy Policy")
             
-            submitted = st.form_submit_button("🎯 Create Account", type="primary")
+            submitted = st.form_submit_button("🎆 Create Account", type="primary")
             
             if submitted:
                 if not all([username, email, password, confirm_password]):
@@ -210,14 +180,23 @@ class AuthManager:
                 elif not agree_terms:
                     st.error("❌ Please agree to the Terms of Service")
                 else:
-                    with st.spinner("📝 Creating account..."):
-                        result = self.db.register_user(username, email, password)
-                    
-                    if result["success"]:
-                        st.success("✅ Account created successfully! Please login.")
-                        st.balloons()
-                    else:
-                        st.error(f"❌ {result['message']}")
+                    with st.spinner("📝 Creating your account..."):
+                        try:
+                            # Direct database connection - no API calls
+                            result = self.db.register_user(username, email, password)
+                            
+                            if result["success"]:
+                                st.success("✅ Account created successfully! 🎉")
+                                st.success("🔄 Please switch to the Login tab to sign in")
+                                st.balloons()
+                            else:
+                                st.error(f"❌ {result['message']}")
+                                
+                        except Exception as e:
+                            st.error(f"❌ Registration failed: {str(e)}")
+                            st.info("🛠️ Database connection issue - check MongoDB status")
+                            print(f"Registration error details: {e}")
+                            traceback.print_exc()
     
     def show_user_profile(self):
         """Display enhanced user profile in sidebar"""
@@ -225,7 +204,6 @@ class AuthManager:
             st.markdown("---")
             
             if st.session_state.authenticated:
-                # Enhanced user profile
                 st.markdown(f"""
                 <div style="
                     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -240,7 +218,6 @@ class AuthManager:
                 </div>
                 """, unsafe_allow_html=True)
                 
-                # Get user analytics
                 analytics = self.db.get_user_analytics(st.session_state.user_id)
                 
                 col1, col2 = st.columns(2)
@@ -255,7 +232,6 @@ class AuthManager:
                     self.logout()
             
             elif st.session_state.get('skip_login', False):
-                # Enhanced guest mode
                 st.markdown("""
                 <div style="
                     background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
@@ -275,35 +251,13 @@ class AuthManager:
                 if st.button("🔑 Login to Save Data", type="primary"):
                     st.session_state.skip_login = False
                     st.rerun()
-            
-            else:
-                # Not logged in state
-                st.markdown("""
-                <div style="
-                    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
-                    color: white;
-                    padding: 1rem;
-                    border-radius: 15px;
-                    text-align: center;
-                    margin-bottom: 1rem;
-                ">
-                    <h3 style="margin: 0; font-size: 1.2rem;">🔒 Not Logged In</h3>
-                    <p style="margin: 0.5rem 0 0 0; opacity: 0.9; font-size: 0.9rem;">Login to save progress</p>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                if st.button("🔑 Login Now", type="primary"):
-                    st.session_state.skip_login = False
-                    st.rerun()
     
     def logout(self):
         """Logout user"""
         if st.session_state.get('session_token'):
             self.db.logout_user(st.session_state.session_token)
         
-        # Clear session state
         self.clear_session()
-        
         st.success("👋 Logged out successfully!")
         st.rerun()
     
@@ -315,7 +269,6 @@ class AuthManager:
         result = self.db.validate_session(st.session_state.session_token)
         
         if not result["success"]:
-            # Session expired, clear state
             self.clear_session()
             return False
         
@@ -333,15 +286,12 @@ class AuthManager:
         """Optional authentication - user can skip or login"""
         self.init_session_state()
         
-        # Check if user is authenticated and session is valid
         if st.session_state.authenticated and self.validate_session():
             return True
         
-        # Check if user chose to skip login
         if st.session_state.get('skip_login', False):
             return True
         
-        # Show login page with skip option
         self.show_optional_login_page()
         return False
     
@@ -395,9 +345,7 @@ class AuthManager:
                         if session.get('generated_topics'):
                             st.write(f"**Topics Generated:** {len(session['generated_topics'])}")
                     
-                    # Restore session button
                     if st.button(f"🔄 Restore Session {i}", key=f"restore_{session['_id']}"):
-                        # Restore session data to current state
                         if session.get('topic'):
                             st.session_state.restored_topic = session['topic']
                         if session.get('platform'):
@@ -405,78 +353,7 @@ class AuthManager:
                         st.success(f"✅ Session {i} restored!")
                         st.rerun()
         else:
-    def show_enhanced_login_form(self):
-        """Enhanced login form with better styling"""
-        st.markdown("**Enter your credentials to access saved sessions**")
-        
-        with st.form("login_form"):
-            username = st.text_input("👤 Username", placeholder="Enter your username")
-            password = st.text_input("🔒 Password", type="password", placeholder="Enter your password")
-            remember_me = st.checkbox("🔄 Keep me logged in for 7 days")
-            
-            submitted = st.form_submit_button("🚀 Sign In", type="primary")
-            
-            if submitted:
-                if username and password:
-                    with st.spinner("🔐 Signing you in..."):
-                        try:
-                            result = self.db.login_user(username, password)
-                        except Exception as e:
-                            st.error(f"❌ Database connection error: {e}")
-                            return
-                    
-                    if result["success"]:
-                        st.session_state.authenticated = True
-                        st.session_state.user_id = result["user_id"]
-                        st.session_state.username = result["username"]
-                        st.session_state.session_token = result["session_token"]
-                        st.session_state.skip_login = False
-                        
-                        st.success(f"✅ Welcome back, {username}! 🎉")
-                        st.balloons()
-                        st.rerun()
-                    else:
-                        st.error(f"❌ {result['message']}")
-                else:
-                    st.error("❌ Please fill in all fields")
-    
-    def show_enhanced_register_form(self):
-        """Enhanced registration form with better styling"""
-        st.markdown("**Create your account to save and sync your blog sessions**")
-        
-        with st.form("register_form"):
-            username = st.text_input("👤 Choose Username", placeholder="Pick a unique username")
-            email = st.text_input("📧 Email Address", placeholder="your.email@example.com")
-            password = st.text_input("🔒 Password", type="password", placeholder="Create a strong password")
-            confirm_password = st.text_input("🔒 Confirm Password", type="password", placeholder="Repeat your password")
-            
-            agree_terms = st.checkbox("✅ I agree to the Terms of Service and Privacy Policy")
-            
-            submitted = st.form_submit_button("🎆 Create Account", type="primary")
-            
-            if submitted:
-                if not all([username, email, password, confirm_password]):
-                    st.error("❌ Please fill in all fields")
-                elif password != confirm_password:
-                    st.error("❌ Passwords don't match")
-                elif len(password) < 6:
-                    st.error("❌ Password must be at least 6 characters")
-                elif not agree_terms:
-                    st.error("❌ Please agree to the Terms of Service")
-                else:
-                    with st.spinner("📝 Creating your account..."):
-                        try:
-                            result = self.db.register_user(username, email, password)
-                        except Exception as e:
-                            st.error(f"❌ Database connection error: {e}")
-                            return
-                    
-                    if result["success"]:
-                        st.success("✅ Account created successfully! 🎉")
-                        st.success("🔄 Please switch to the Login tab to sign in")
-                        st.balloons()
-                    else:
-                        st.error(f"❌ {result['message']}")
+            st.info("📝 No previous sessions found. Start creating content to build your history!")
 
 # Global auth manager instance
 auth_manager = AuthManager()

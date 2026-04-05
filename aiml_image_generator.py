@@ -1,45 +1,39 @@
 import requests
 import os
+from urllib.parse import quote
 from dotenv import load_dotenv
 
 load_dotenv()
 
 class AIMLImageGenerator:
     def __init__(self):
-        self.api_key = os.getenv('AIML_API_KEY')
-        self.base_url = "https://api.aimlapi.com/v1/images/generations/"
+        # Use Pollinations AI instead of AIML API
+        self.base_url = "https://image.pollinations.ai/prompt/"
         
     def generate_image_from_title(self, blog_title: str) -> dict:
-        """Generate image based on blog title"""
+        """Generate image based on blog title using Pollinations AI"""
         
         # Create a visual prompt based on the blog title
         visual_prompt = self._create_visual_prompt(blog_title)
         
-        payload = {
-            "model": "flux/schnell",
-            "prompt": visual_prompt
-        }
-        
-        headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "content-type": "application/json"
-        }
-        
         try:
-            response = requests.post(self.base_url, json=payload, headers=headers)
-            response.raise_for_status()
+            # Use Pollinations AI API
+            encoded_prompt = quote(visual_prompt)
+            image_url = f"{self.base_url}{encoded_prompt}?width=1200&height=630&nologo=true&enhance=true"
             
-            result = response.json()
             return {
                 "success": True,
-                "image_url": result.get("data", [{}])[0].get("url", ""),
+                "image_url": image_url,
                 "prompt": visual_prompt
             }
             
-        except requests.exceptions.RequestException as e:
+        except Exception as e:
+            # Fallback to simple image
+            fallback_url = f"https://picsum.photos/1200/630?random={abs(hash(blog_title)) % 1000}"
             return {
                 "success": False,
                 "error": str(e),
+                "image_url": fallback_url,
                 "prompt": visual_prompt
             }
     

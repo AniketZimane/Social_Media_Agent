@@ -200,28 +200,35 @@ const ContentGenerator = ({ setBlogContent, blogContent }) => {
     setIsEditing(true);
     
     try {
-      const response = await fetch('http://localhost:5001/api/edit-content', {
+      const response = await fetch('http://localhost:5000/api/edit-content', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          originalContent: blogContent,
-          editPrompt: editPrompt,
-          platform: platform
+          content: blogContent.content,
+          instruction: editPrompt,
+          topic: topic,
+          platform: platform,
+          target_length: maxWords
         })
       });
       
       if (response.ok) {
         const editedData = await response.json();
-        setBlogContent(editedData);
-        setShowEditModal(false);
-        setEditPrompt('');
-        setIsEditing(false);
-        return;
+        if (editedData.success) {
+          setBlogContent({
+            ...blogContent,
+            ...editedData
+          });
+          setShowEditModal(false);
+          setEditPrompt('');
+          setIsEditing(false);
+          return;
+        }
       }
     } catch (error) {
-      console.log('Using fallback edit generation');
+      console.log('Edit API failed, using fallback:', error);
     }
     
     // Fallback: Generate edited content locally

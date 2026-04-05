@@ -21,12 +21,12 @@ class MetadataAgent:
             raise ValueError("GOOGLE_AI_API_KEY not set in environment")
 
         genai.configure(api_key=self.api_key)
-        self.model = genai.GenerativeModel("gemini-pro")
+        self.model = genai.GenerativeModel("gemini-1.5-flash")
 
     def generate_metadata(self, topic: str, content: str, platform: str) -> Dict:
         """Generate all metadata for blog content"""
         
-        print(f"🏷️ Generating metadata for {platform} content...")
+        print(f"Generating metadata for {platform} content...")
         
         try:
             # Generate hashtags
@@ -46,7 +46,7 @@ class MetadataAgent:
             }
             
         except Exception as e:
-            print(f"❌ Metadata generation failed: {e}")
+            print(f"Metadata generation failed: {e}")
             return {
                 "hashtags": [f"#{topic.replace(' ', '')}"],
                 "cta": f"What are your thoughts on {topic}? Share below! 💭",
@@ -105,7 +105,7 @@ Example: #AI, #Technology, #Innovation, #StartupLife"""
             return hashtags[:max_tags]
             
         except Exception as e:
-            print(f"⚠️ Hashtag generation failed: {e}")
+            print(f"Hashtag generation failed: {e}")
             # Fallback to topic-based hashtags
             return self._generate_fallback_hashtags(topic, max_tags)
 
@@ -146,7 +146,7 @@ Example: "What's your biggest challenge with AI implementation? Drop your though
             return cta
             
         except Exception as e:
-            print(f"⚠️ CTA generation failed: {e}")
+            print(f"CTA generation failed: {e}")
             return f"What are your thoughts on {topic}? Share your experience below! 💭✨"
 
     def _generate_keywords(self, topic: str, content: str) -> List[str]:
@@ -178,7 +178,7 @@ Example: AI, Machine Learning, Automation, Digital Transformation, Tech Innovati
             return keywords[:12]
             
         except Exception as e:
-            print(f"⚠️ Keywords generation failed: {e}")
+            print(f"Keywords generation failed: {e}")
             # Extract keywords from topic and content
             return self._extract_fallback_keywords(topic, content)
 

@@ -50,7 +50,7 @@ class BlogWriterAgent:
             }
             word_count = platform_defaults.get(platform.lower(), 800)
         
-        print(f"🚀 Generating AI content for: {topic} on {platform} ({word_count} words)")
+        print(f"Generating AI content for: {topic} on {platform} ({word_count} words)")
         
         try:
             # Generate main content
@@ -69,7 +69,7 @@ class BlogWriterAgent:
             
             final_content = html.unescape(content_result)
             
-            print(f"✅ Successfully generated {len(final_content)} characters")
+            print(f"Successfully generated {len(final_content)} characters")
             
             return {
                 "success": True,
@@ -91,7 +91,7 @@ class BlogWriterAgent:
             }
 
         except Exception as e:
-            print(f"❌ AI generation failed: {e}")
+            print(f"AI generation failed: {e}")
             return self._generate_fallback_response(topic, platform, str(e))
 
     # -------------------- CONTENT GENERATION --------------------

@@ -22,9 +22,9 @@ class DatabaseManager:
             self.db = self.client['agentic_ai_blog']
             # Test connection
             self.client.admin.command('ping')
-            print("✅ MongoDB connected successfully!")
+            print("MongoDB connected successfully!")
         except Exception as e:
-            print(f"❌ MongoDB connection failed: {e}")
+            print(f"MongoDB connection failed: {e}")
             raise
     
     def hash_password(self, password: str) -> str:
