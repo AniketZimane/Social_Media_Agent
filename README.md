@@ -171,6 +171,11 @@ TWITTER_BEARER_TOKEN=your_twitter_token
 - Optimal timing based on platform analytics
 - Engagement score predictions
 
+### 3. Auto-Publishing
+- Connect social media accounts
+- Schedule or post immediately
+- Track posting results and analytics
+
 ### 4. Blockchain Features
 - Content ownership verification
 - Automatic NFT creation for monetization
